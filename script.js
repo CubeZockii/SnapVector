@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    const API_BASE_URL = '';
+    const API_BASE_URL = 'http://46.202.82.69:1118/';
 
     const authView = document.getElementById('auth-view');
     const appView = document.getElementById('app-view');
