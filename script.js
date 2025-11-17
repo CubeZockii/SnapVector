@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {number} timeout - Timeout in milliseconds.
      * @returns {Promise<Response>} A promise that resolves with the fetch Response.
      */
-    async function fetchWithTimeout(url, options = {}, timeout = 2000) {
+    async function fetchWithTimeout(url, options = {}, timeout = 5000) {
         const controller = new AbortController();
         const signal = controller.signal;
         options.signal = signal;
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetchWithTimeout(`${API_BASE_URL}/images`, {
                 credentials: 'include'
-            }, 2000);
+            }, 5000);
 
             if (!response.ok) {
                 if (response.status === 401) {
@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetchWithTimeout(`${API_BASE_URL}/auth_status`, {
                 credentials: 'include'
-            }, 2000);
+            }, 5000);
 
             if (!response.ok) {
                 throw new Error('Failed to check auth status.');
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials),
                 credentials: 'include'
-            }, 2000);
+            }, 5000);
 
             const data = await response.json();
 
@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetchWithTimeout(`${API_BASE_URL}/guest_login`, {
                 method: 'POST',
                 credentials: 'include'
-            }, 2000);
+            }, 5000);
 
             const data = await response.json();
 
@@ -286,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetchWithTimeout(`${API_BASE_URL}/logout`, {
                 method: 'POST',
                 credentials: 'include'
-            }, 2000);
+            }, 5000);
 
             const data = await response.json();
 
@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
-            }, 2000);
+            }, 5000);
 
             const data = await response.json();
 
@@ -479,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetchWithTimeout(`${API_BASE_URL}/image/${id}`, {
                 credentials: 'include'
-            }, 2000);
+            }, 5000);
 
             const data = await response.json();
 
@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetchWithTimeout(`${API_BASE_URL}/image/${currentImageId}`, {
                 method: 'DELETE',
                 credentials: 'include'
-            }, 2000);
+            }, 5000);
 
             const data = await response.json();
 
@@ -594,5 +594,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function confirm(message) {
     console.warn(`Confirmation dialog triggered: ${message}. Automatically proceeding.`);
+
     return true;
 }
