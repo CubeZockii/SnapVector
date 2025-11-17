@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    const API_BASE_URL = 'https://snapserve-server-git-main-cubezockiis-projects.vercel.app';
+    const API_BASE_URL = '';
 
     const authView = document.getElementById('auth-view');
     const appView = document.getElementById('app-view');
