@@ -356,15 +356,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFileSelection(file) {
         if (!file) return;
 
-        const MAX_SIZE = 10 * 1024 * 1024;
-        if (file.size > MAX_SIZE) {
-            showMessage(`File size exceeds the 10MB limit. Your file is ${Math.round(file.size / 1024 / 1024 * 10) / 10}MB.`, 'error');
-            fileInput.value = '';
-            submitButton.disabled = true;
-            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
-            return;
-        }
-
         const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
             showMessage('Invalid file type. Only PNG, JPG, GIF, and WEBP are allowed.', 'error');
