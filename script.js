@@ -129,8 +129,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.className = `relative group rounded-lg overflow-hidden border ${expiryClass} bg-gray-700 shadow-xl cursor-pointer gallery-image`;
                     item.setAttribute('data-image-id', image.id);
 
+                    // --- MODIFIED: Use image.url for src to respect cache-control headers ---
                     const img = document.createElement('img');
-                    img.src = image.url;
+                    img.src = image.url; // This URL now sends no-cache headers
                     img.alt = `Uploaded on ${new Date(image.upload_date).toLocaleDateString()}`;
                     img.className = 'w-full h-32 object-cover transition duration-300';
 
@@ -349,6 +350,20 @@ document.addEventListener('DOMContentLoaded', () => {
         togglePasswordVisibility(registerPasswordInput, toggleRegisterPassword);
     });
 
+    // --- ADDED: Helper function to format file size ---
+    /**
+     * Formats bytes into a human-readable string (KB, MB, GB).
+     * @param {number} bytes - The file size in bytes.
+     * @returns {string} The formatted file size.
+     */
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
     /**
      * Validates and previews the selected file.
      * @param {File} file - The file to process.
@@ -356,9 +371,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFileSelection(file) {
         if (!file) return;
 
-        const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+        // --- ADDED: Client-side file size check ---
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        if (file.size > maxSize) {
+            const formattedSize = formatFileSize(file.size);
+            showMessage(`File size exceeds the 10MB limit. Your file is ${formattedSize}.`, 'error');
+            fileInput.value = '';
+            submitButton.disabled = true;
+            submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+            return;
+        }
+
+        const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
-            showMessage('Invalid file type. Only PNG, JPG, GIF, and WEBP are allowed.', 'error');
+            showMessage('Invalid file type. Only PNG, JPG, JPEG, GIF, and WEBP are allowed.', 'error');
             fileInput.value = '';
             submitButton.disabled = true;
             submitButton.classList.add('opacity-50', 'cursor-not-allowed');
@@ -433,20 +459,24 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
 
         try {
+            // Note: Timeout increased for large file uploads
             const response = await fetchWithTimeout(`${API_BASE_URL}/upload`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
-            }, 120000);
+            }, 120000); 
 
+            // --- MODIFIED: This block now handles all server responses, including 413 ---
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success) { // 'success' is True only on 200 OK
                 showMessage('Image uploaded successfully!', 'success');
                 clearPreviewButton.click();
                 showDetailsView(data.details_id);
             } else {
-                showMessage(data.error, 'error');
+                // This will now catch the error from our @app.errorhandler(413)
+                // as well as any other { 'success': False, 'error': ... } response
+                showMessage(data.error || 'An unknown error occurred.', 'error');
             }
 
         } catch (error) {
@@ -454,6 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error.message.includes('timed out')) {
                 showMessage('Upload request timed out. This can happen with large files or slow connections.', 'error');
             } else {
+                // This catches network errors (e.g., server down)
                 showMessage('Network or server error during upload.', 'error');
             }
         } finally {
@@ -515,7 +546,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 detailsTitle.textContent = `Image Details: ${truncateFilename(data.filename, 35)}`;
 
-                imagePreview.src = data.url;
+                // --- MODIFIED: Use data.url to respect cache-control headers ---
+                imagePreview.src = data.url; // This URL now sends no-cache headers
                 shareLinkInput.value = data.url;
 
                 if (expiryDate) {
@@ -592,17 +624,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(err => {
                     console.error('Copy failed using navigator.clipboard.writeText:', err);
-                    showMessage('Could not automatically copy the link. Please copy it manually.', 'error');
+                    // Fallback for http or iframe restrictions
+                    fallbackCopy();
                 });
         } else {
-            shareLinkInput.select();
-            try {
-                document.execCommand('copy');
-                showMessage('Link copied using fallback method.', 'success');
-            } catch (err) {
-                console.error('Fallback copy failed:', err);
-                showMessage('Could not copy the link. Please copy it manually.', 'error');
+            // Fallback for older browsers
+           fallbackCopy();
+        }
+    }
+
+    // --- ADDED: Fallback copy method using document.execCommand ---
+    function fallbackCopy() {
+        shareLinkInput.select();
+        shareLinkInput.setSelectionRange(0, 99999); // For mobile devices
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                const originalText = copyButton.innerHTML;
+                copyButton.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                copyButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                copyButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                
+                setTimeout(() => {
+                    copyButton.innerHTML = originalText;
+                    copyButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    copyButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                }, 2000);
+            } else {
+                 showMessage('Could not copy the link. Please copy it manually.', 'error');
             }
+        } catch (err) {
+            console.error('Fallback copy failed:', err);
+            showMessage('Could not copy the link. Please copy it manually.', 'error');
         }
     }
 
@@ -650,8 +703,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     checkAuthStatus();
 });
-
-function confirm(message) {
-    console.warn(`Confirmation dialog triggered: ${message}. Automatically proceeding.`);
-    return true;
-}
