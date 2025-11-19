@@ -1,9 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // FIXED: Use localhost for local development
-    const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://127.0.0.1:7872'
-        : 'https://snapserve-server.sayrz.com';
+    const API_BASE_URL = 'https://snapserve-server.sayrz.com';
 
     const authView = document.getElementById('auth-view');
     const appView = document.getElementById('app-view');
