@@ -1,6 +1,6 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
 
-    const API_BASE_URL = 'https://idk-nqkw.onrender.com';
+    const API_BASE_URL = 'https://snapvector-server.codelabworks.is-cool.dev';
 
     let currentUser = {
         username: null,
@@ -921,4 +921,5 @@
     }
 
     checkAuthStatus();
+
 });
