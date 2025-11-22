@@ -1,16 +1,34 @@
-document.addEventListener('DOMContentLoaded', () => {
+﻿document.addEventListener('DOMContentLoaded', () => {
 
-    const API_BASE_URL = 'https://snapvector-server.codelabworks.is-cool.dev';
+    const API_BASE_URL = 'https://idk-nqkw.onrender.com';
+
+    let currentUser = {
+        username: null,
+        is_guest: false,
+        role: 'user',
+        is_admin: false
+    };
 
     const authView = document.getElementById('auth-view');
     const appView = document.getElementById('app-view');
     const messageBox = document.getElementById('message-box');
 
+    const uploaderView = document.getElementById('uploader-view');
+    const detailsView = document.getElementById('details-view');
+    const dashboardView = document.getElementById('dashboard-view');
+    const accountView = document.getElementById('account-view');
+
     const loginForm = document.getElementById('login-form');
     const registerForm = document.getElementById('register-form');
     const guestLoginButton = document.getElementById('guest-login-button');
+
+    const homeButton = document.getElementById('home-button');
+    const accountButton = document.getElementById('account-button');
     const logoutButton = document.getElementById('logout-button');
     const userGreeting = document.getElementById('user-greeting');
+    const adminButton = document.getElementById('admin-button');
+    const announcementBanner = document.getElementById('announcement-banner');
+    let announcementInterval = null;
 
     const toggleLoginPassword = document.getElementById('toggle-login-password');
     const loginPasswordInput = document.getElementById('login-password');
@@ -21,28 +39,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-upload');
     const submitButton = document.getElementById('submit-button');
     const loadingIndicator = document.getElementById('loading-indicator');
-
     const dropZone = document.getElementById('drop-zone');
     const previewZone = document.getElementById('preview-zone');
     const filePreview = document.getElementById('file-preview');
     const clearPreviewButton = document.getElementById('clear-preview-button');
 
-    const detailsView = document.getElementById('details-view');
     const detailsTitle = document.getElementById('details-title');
     const imagePreview = document.getElementById('image-preview');
     const shareLinkInput = document.getElementById('share-link');
     const copyButton = document.getElementById('copy-button');
     const backToUploaderButton = document.getElementById('back-to-uploader-button');
     const deleteButton = document.getElementById('delete-button');
-
     const expirationInfoBox = document.getElementById('expiration-info');
     const expirationText = document.getElementById('expiration-text').querySelector('span');
-
     let currentImageId = null;
 
-    const dashboardView = document.getElementById('dashboard-view');
     const imageGallery = document.getElementById('image-gallery');
     const noImagesMessage = document.getElementById('no-images-message');
+
+    const backToDashboardButton = document.getElementById('back-to-dashboard-button');
+    const accountFormsFull = document.getElementById('account-forms-full');
+    const accountFormsGuest = document.getElementById('account-forms-guest');
+
+    const changeUsernameForm = document.getElementById('change-username-form');
+    const newUsernameInput = document.getElementById('new-username');
+
+    const changePasswordForm = document.getElementById('change-password-form');
+    const currentPasswordInput = document.getElementById('current-password');
+    const newPasswordInput = document.getElementById('new-password');
+    const confirmPasswordInput = document.getElementById('confirm-password');
+
+    const sessionsList = document.getElementById('sessions-list');
+    const sessionsLoading = document.getElementById('sessions-loading');
+
+    const deleteAccountForm = document.getElementById('delete-account-form');
+    const deletePasswordField = document.getElementById('delete-password-field');
+    const deleteConfirmPasswordInput = document.getElementById('delete-confirm-password');
 
     /**
      * Shows a message box with styling based on type.
@@ -75,6 +107,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     }
 
+    function showConfirm(message) {
+        try {
+            return window.confirm(message);
+        } catch (e) {
+            console.warn("window.confirm is blocked. Auto-confirming delete.", e);
+            showMessage("Confirmation dialogs are blocked. Action cancelled.", "error");
+            return false;
+        }
+    }
+
+
     /**
      * Fetches a resource with a specified timeout.
      * @param {string} url - The URL to fetch.
@@ -99,12 +142,57 @@ document.addEventListener('DOMContentLoaded', () => {
         return Promise.race([fetchPromise, timeoutPromise]);
     }
 
+    function showView(viewToShow) {
+        [authView, appView, uploaderView, detailsView, dashboardView, accountView].forEach(view => {
+            view.classList.add('hidden');
+        });
+
+        if (viewToShow === 'auth') {
+            authView.classList.remove('hidden');
+        } else {
+            appView.classList.remove('hidden');
+            if (viewToShow === 'dashboard') {
+                uploaderView.classList.remove('hidden');
+                dashboardView.classList.remove('hidden');
+            } else if (viewToShow === 'details') {
+                detailsView.classList.remove('hidden');
+            } else if (viewToShow === 'account') {
+                accountView.classList.remove('hidden');
+            }
+        }
+    }
+
+    function showDashboardView() {
+        showView('dashboard');
+        fetchImages();
+    }
+
+    function showAccountView() {
+        showView('account');
+
+        changeUsernameForm.reset();
+        changePasswordForm.reset();
+        deleteAccountForm.reset();
+
+        if (currentUser.is_guest) {
+            accountFormsFull.classList.add('hidden');
+            accountFormsGuest.classList.remove('hidden');
+            deletePasswordField.classList.add('hidden');
+        } else {
+            accountFormsFull.classList.remove('hidden');
+            accountFormsGuest.classList.add('hidden');
+            deletePasswordField.classList.remove('hidden');
+            newUsernameInput.placeholder = currentUser.username;
+            fetchSessions();
+        }
+    }
+
 
     async function fetchImages() {
         try {
             const response = await fetchWithTimeout(`${API_BASE_URL}/images`, {
                 credentials: 'include'
-            }, 8000); 
+            }, 8000);
 
             if (!response.ok) {
                 if (response.status === 401) {
@@ -119,33 +207,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (images.length === 0) {
                 noImagesMessage.classList.remove('hidden');
-                imageGallery.appendChild(noImagesMessage);
             } else {
                 noImagesMessage.classList.add('hidden');
                 images.forEach(image => {
-                    const expiryClass = image.is_expiring_soon ? 'border-2 border-red-500' : 'border-gray-600';
-
+                    const expiryClass = image.is_expiring_soon ? 'border-2 border-red-500 expiring-glow' : 'border-gray-600';
                     const item = document.createElement('div');
                     item.className = `relative group rounded-lg overflow-hidden border ${expiryClass} bg-gray-700 shadow-xl cursor-pointer gallery-image`;
                     item.setAttribute('data-image-id', image.id);
-
                     const img = document.createElement('img');
                     img.src = image.url;
                     img.alt = `Uploaded on ${new Date(image.upload_date).toLocaleDateString()}`;
-                    img.className = 'w-full h-32 object-cover transition duration-300';
-
+                    img.className = 'w-full h-32 object-cover';
                     const overlay = document.createElement('div');
                     overlay.className = 'absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300';
-
                     const viewButton = document.createElement('span');
                     viewButton.textContent = 'View Details';
                     viewButton.className = 'text-white text-sm font-bold p-2 bg-indigo-600 rounded-lg';
-
                     overlay.appendChild(viewButton);
                     item.appendChild(img);
                     item.appendChild(overlay);
                     imageGallery.appendChild(item);
-
                     item.addEventListener('click', () => showDetailsView(image.id));
                 });
             }
@@ -159,27 +240,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchAnnouncements() {
+        if (!announcementBanner) return;
+        try {
+            const response = await fetchWithTimeout(`${API_BASE_URL}/announcements`, {
+                credentials: 'include'
+            }, 5000);
+            if (!response.ok) throw new Error('Failed to fetch announcements');
+            const data = await response.json();
+            if (data && data.length > 0) {
+                const latestAnnouncement = data[0];
+                const messageDate = new Date(latestAnnouncement.created_at).toLocaleString();
+                announcementBanner.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-bullhorn fa-fade text-xl"></i>
+                        <div>
+                            <p class="font-bold">Announcement</p>
+                            <p class="text-sm">${latestAnnouncement.message}</p>
+                            <p class="text-xs text-indigo-400 mt-1">${messageDate}</p>
+                        </div>
+                    </div>`;
+                announcementBanner.classList.remove('hidden');
+            } else {
+                announcementBanner.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Error fetching announcements:', error);
+            announcementBanner.classList.add('hidden');
+        }
+    }
+
+
     /**
      * Updates the UI based on authentication status.
      * @param {boolean} isAuthenticated - Whether the user is logged in.
      * @param {object|null} userData - User data (username, is_guest) or null.
      */
     function updateUI(isAuthenticated, userData = null) {
-        if (isAuthenticated) {
-            authView.classList.add('hidden');
-            appView.classList.remove('hidden');
-            const greeting = userData.is_guest
-                ? `Guest User: ${userData.username}`
-                : `Welcome, ${userData.username}`;
+        if (isAuthenticated && userData) {
+            currentUser = { ...userData };
 
-            userGreeting.textContent = greeting;
-            fetchImages();
+            showView('dashboard');
+
+            let roleBadge = '';
+            if (currentUser.role === 'owner') roleBadge = '👑 Owner';
+            else if (currentUser.role === 'admin') roleBadge = '🛡️ Admin';
+            else if (currentUser.role === 'moderator') roleBadge = '⚔️ Mod';
+            else if (currentUser.is_guest) roleBadge = '👤 Guest';
+            else roleBadge = 'User';
+
+            const greeting = `Welcome, ${userData.username} <span class="text-xs bg-gray-700 px-2 py-0.5 rounded ml-2">${roleBadge}</span>`;
+            userGreeting.innerHTML = greeting;
+
+            if (adminButton) {
+                const isAdmin = userData.role === 'owner' || userData.role === 'admin' || userData.role === 'moderator' || userData.is_admin;
+                adminButton.classList.toggle('hidden', !isAdmin);
+
+                if (isAdmin) adminButton.href = 'admin.html';
+            }
+
+            if (announcementInterval) clearInterval(announcementInterval);
+            fetchAnnouncements();
+            announcementInterval = setInterval(fetchAnnouncements, 60000);
+
         } else {
-            authView.classList.remove('hidden');
-            appView.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-            registerForm.classList.add('hidden');
-            userGreeting.textContent = '';
+            currentUser = { username: null, is_guest: false, is_admin: false, role: 'user' };
+            showView('auth');
+
+            if (announcementInterval) clearInterval(announcementInterval);
+            if (adminButton) adminButton.classList.add('hidden');
+            if (announcementBanner) announcementBanner.classList.add('hidden');
         }
     }
 
@@ -187,15 +317,10 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetchWithTimeout(`${API_BASE_URL}/auth_status`, {
                 credentials: 'include'
-            }, 8000); 
-
-            if (!response.ok) {
-                throw new Error('Failed to check auth status.');
-            }
-
+            }, 8000);
+            if (!response.ok) throw new Error('Failed to check auth status.');
             const data = await response.json();
             updateUI(data.authenticated, data);
-
         } catch (error) {
             console.error('Error checking auth status:', error);
             if (error.message.includes('timed out')) {
@@ -213,13 +338,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {object} credentials - { username, password }.
      */
     async function handleAuth(endpoint, credentials) {
+        let response;
         try {
-            const response = await fetchWithTimeout(`${API_BASE_URL}${endpoint}`, {
+            response = await fetchWithTimeout(`${API_BASE_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials),
                 credentials: 'include'
-            }, 8000); 
+            }, 8000);
 
             const data = await response.json();
 
@@ -233,7 +359,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Auth error:', error);
             if (error.message.includes('timed out')) {
                 showMessage('Authentication request timed out. Please try again.', 'error');
-            } else {
+            } else if (response && response.status === 429) {
+                showMessage('Too many login attempts. Please try again later.', 'error');
+            }
+            else {
                 showMessage('Network or server error during authentication.', 'error');
             }
         }
@@ -243,17 +372,16 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         guestLoginButton.disabled = true;
         guestLoginButton.textContent = 'Creating Guest Account...';
-
+        let response;
         try {
-            const response = await fetchWithTimeout(`${API_BASE_URL}/guest_login`, {
+            response = await fetchWithTimeout(`${API_BASE_URL}/guest_login`, {
                 method: 'POST',
                 credentials: 'include'
-            }, 8000); 
+            }, 8000);
 
             const data = await response.json();
-
             if (data.success) {
-                showMessage(`Welcome! Your guest account (${data.username}) has been created. Your uploads will be saved under this unique ID!`, 'success');
+                showMessage(`Welcome! Your guest account (${data.username}) has been created.`, 'success');
                 updateUI(true, data);
             } else {
                 showMessage(data.error || 'Failed to create guest account.', 'error');
@@ -262,7 +390,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Guest login error:', error);
             if (error.message.includes('timed out')) {
                 showMessage('Guest login request timed out. Please try again.', 'error');
-            } else {
+            } else if (response && response.status === 429) {
+                showMessage('Too many guest accounts created. Please try again later.', 'error');
+            }
+            else {
                 showMessage('Network or server error during guest login.', 'error');
             }
         } finally {
@@ -270,7 +401,6 @@ document.addEventListener('DOMContentLoaded', () => {
             guestLoginButton.textContent = 'Login as Guest (Saves your images)';
         }
     });
-
 
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -291,10 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetchWithTimeout(`${API_BASE_URL}/logout`, {
                 method: 'POST',
                 credentials: 'include'
-            }, 8000); 
-
+            }, 8000);
             const data = await response.json();
-
             if (data.success) {
                 showMessage(data.message, 'info');
                 updateUI(false);
@@ -323,11 +451,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginForm.classList.remove('hidden');
     });
 
-    /**
-     * Toggles the visibility of a password input field.
-     * @param {HTMLInputElement} input - The password input element.
-     * @param {HTMLElement} toggleButton - The button (or icon) that triggers the toggle.
-     */
     function togglePasswordVisibility(input, toggleButton) {
         const icon = toggleButton.querySelector('i');
         if (input.type === 'password') {
@@ -349,11 +472,6 @@ document.addEventListener('DOMContentLoaded', () => {
         togglePasswordVisibility(registerPasswordInput, toggleRegisterPassword);
     });
 
-    /**
-     * Formats bytes into a human-readable string (KB, MB, GB).
-     * @param {number} bytes - The file size in bytes.
-     * @returns {string} The formatted file size.
-     */
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -362,13 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    /**
-     * Validates and previews the selected file.
-     * @param {File} file - The file to process.
-     */
     function handleFileSelection(file) {
         if (!file) return;
-
         const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
             const formattedSize = formatFileSize(file.size);
@@ -378,7 +491,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.classList.add('opacity-50', 'cursor-not-allowed');
             return;
         }
-
         const allowedTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
             showMessage('Invalid file type. Only PNG, JPG, JPEG, GIF, and WEBP are allowed.', 'error');
@@ -387,7 +499,6 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.classList.add('opacity-50', 'cursor-not-allowed');
             return;
         }
-
         const reader = new FileReader();
         reader.onload = (e) => {
             filePreview.src = e.target.result;
@@ -409,17 +520,14 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
         }, false);
     });
-
     dropZone.addEventListener('dragenter', () => {
         dropZone.classList.add('border-indigo-500', 'bg-gray-700');
     });
-
     ['dragleave', 'drop'].forEach(eventName => {
         dropZone.addEventListener(eventName, () => {
             dropZone.classList.remove('border-indigo-500', 'bg-gray-700');
         });
     });
-
     dropZone.addEventListener('drop', (e) => {
         const dt = e.dataTransfer;
         if (dt.files.length > 0) {
@@ -441,29 +549,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-
         const file = fileInput.files[0];
         if (!file) {
             showMessage('Please select a file to upload.', 'error');
             return;
         }
-
         submitButton.disabled = true;
         document.getElementById('button-text').textContent = 'Uploading...';
         loadingIndicator.classList.remove('hidden');
-
         const formData = new FormData();
         formData.append('file', file);
-
+        let response;
         try {
-            const response = await fetchWithTimeout(`${API_BASE_URL}/upload`, {
+            response = await fetchWithTimeout(`${API_BASE_URL}/upload`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include'
-            }, 120000); 
-
+            }, 120000);
             const data = await response.json();
-
             if (data.success) {
                 showMessage('Image uploaded successfully!', 'success');
                 clearPreviewButton.click();
@@ -471,12 +574,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 showMessage(data.error || 'An unknown error occurred.', 'error');
             }
-
         } catch (error) {
             console.error('Upload error:', error);
             if (error.message.includes('timed out')) {
                 showMessage('Upload request timed out. This can happen with large files or slow connections.', 'error');
-            } else {
+            } else if (response && response.status === 429) {
+                showMessage('You are uploading too fast. Please try again in a minute.', 'error');
+            }
+            else {
                 showMessage('Network or server error during upload.', 'error');
             }
         } finally {
@@ -488,32 +593,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    /**
-     * Truncates a filename if it's too long, cutting it off at a random-ish point.
-     * @param {string} filename - The original filename.
-     * @param {number} maxLength - The maximum desired length.
-     * @returns {string} The truncated filename.
-     */
     function truncateFilename(filename, maxLength = 30) {
-        if (filename.length <= maxLength) {
-            return filename;
-        }
-
+        if (filename.length <= maxLength) return filename;
         const extensionMatch = filename.match(/\.([0-9a-z]+)$/i);
         const extension = extensionMatch ? extensionMatch[0] : '';
         const baseName = extensionMatch ? filename.slice(0, -extension.length) : filename;
-
         const maxBaseLength = maxLength - extension.length - 3;
-
-        if (maxBaseLength <= 0) {
-            return filename.substring(0, maxLength - 3) + '...';
-        }
-
+        if (maxBaseLength <= 0) return filename.substring(0, maxLength - 3) + '...';
         const cutoff = Math.floor(Math.random() * (maxBaseLength * 0.4)) + Math.floor(maxBaseLength * 0.4);
-
         return baseName.substring(0, cutoff) + '...' + extension;
     }
-
 
     /**
      * Displays the details view for a specific image.
@@ -524,20 +613,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetchWithTimeout(`${API_BASE_URL}/image/${id}`, {
                 credentials: 'include'
-            }, 8000); 
-
+            }, 8000);
             const data = await response.json();
-
             if (data.success) {
-                document.getElementById('uploader-view').classList.add('hidden');
-                dashboardView.classList.add('hidden');
-                detailsView.classList.remove('hidden');
-
-                const uploadDate = new Date(data.upload_date).toLocaleDateString();
+                showView('details');
                 const expiryDate = data.expires_at ? new Date(data.expires_at) : null;
-
                 detailsTitle.textContent = `Image Details: ${truncateFilename(data.filename, 35)}`;
-
                 imagePreview.src = data.url;
                 shareLinkInput.value = data.url;
 
@@ -545,25 +626,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     const now = new Date();
                     const diffTime = expiryDate.getTime() - now.getTime();
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
                     const formattedExpiryDate = expiryDate.toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
+                        year: 'numeric', month: 'long', day: 'numeric'
                     });
-
                     if (diffDays <= 3) {
                         expirationText.textContent = `PURGE ALERT! This image will be deleted on ${formattedExpiryDate} (${diffDays} days left).`;
-                        expirationInfoBox.classList.remove('hidden');
+                        expirationInfoBox.className = 'bg-red-900/50 border-2 border-red-500 rounded-lg p-3';
+                        expirationText.parentElement.classList.remove('text-blue-300');
+                        expirationText.parentElement.classList.add('text-red-300');
+                        expirationText.parentElement.querySelector('i').className = 'fa-solid fa-triangle-exclamation';
                     } else {
                         expirationText.textContent = `This image will be deleted on ${formattedExpiryDate} (${diffDays} days left).`;
                         expirationInfoBox.className = 'bg-blue-900/50 border-2 border-blue-500 rounded-lg p-3';
                         expirationText.parentElement.classList.remove('text-red-300');
                         expirationText.parentElement.classList.add('text-blue-300');
                         expirationText.parentElement.querySelector('i').className = 'fa-solid fa-circle-info';
-
-                        expirationInfoBox.classList.remove('hidden');
                     }
+                    expirationInfoBox.classList.remove('hidden');
                 } else {
                     expirationInfoBox.classList.add('hidden');
                 }
@@ -576,20 +655,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     deleteButton.classList.add('hidden');
                     deleteButton.classList.remove('flex', 'items-center', 'justify-center', 'space-x-2');
                 }
-
             } else {
                 showMessage(data.error, 'error');
-                backToUploaderButton.click();
+                showDashboardView();
             }
-
         } catch (error) {
             console.error('Details fetch error:', error);
-            if (error.message.includes('timed out')) {
-                showMessage('Could not load image details: The request timed out.', 'error');
+            if (error.message.includes('timed out') || error.message.includes('Failed to fetch')) {
+                showMessage('You must be logged in to view image details.', 'error');
             } else {
                 showMessage('Could not load image details.', 'error');
             }
-            backToUploaderButton.click();
+            showDashboardView();
         }
     }
 
@@ -598,7 +675,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleCopy() {
         const textToCopy = shareLinkInput.value;
-
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(textToCopy)
                 .then(() => {
@@ -606,7 +682,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     copyButton.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
                     copyButton.classList.add('bg-green-600', 'hover:bg-green-700');
                     copyButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-                    
                     setTimeout(() => {
                         copyButton.innerHTML = originalText;
                         copyButton.classList.remove('bg-green-600', 'hover:bg-green-700');
@@ -618,7 +693,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fallbackCopy();
                 });
         } else {
-           fallbackCopy();
+            fallbackCopy();
         }
     }
 
@@ -632,14 +707,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 copyButton.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
                 copyButton.classList.add('bg-green-600', 'hover:bg-green-700');
                 copyButton.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-                
                 setTimeout(() => {
                     copyButton.innerHTML = originalText;
                     copyButton.classList.remove('bg-green-600', 'hover:bg-green-700');
                     copyButton.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
                 }, 2000);
             } else {
-                 showMessage('Could not copy the link. Please copy it manually.', 'error');
+                showMessage('Could not copy the link. Please copy it manually.', 'error');
             }
         } catch (err) {
             console.error('Fallback copy failed:', err);
@@ -647,21 +721,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     deleteButton.addEventListener('click', async () => {
         if (!currentImageId) return;
-
+        if (!showConfirm(`Are you sure you want to delete this image? This cannot be undone.`)) {
+            return;
+        }
         try {
             const response = await fetchWithTimeout(`${API_BASE_URL}/image/${currentImageId}`, {
                 method: 'DELETE',
                 credentials: 'include'
-            }, 8000); 
-
+            }, 8000);
             const data = await response.json();
-
             if (data.success) {
                 showMessage('Image deleted successfully.', 'success');
-                backToUploaderButton.click();
+                showDashboardView();
             } else {
                 showMessage(data.error, 'error');
             }
@@ -675,19 +748,177 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    backToUploaderButton.addEventListener('click', () => {
-        currentImageId = null;
-        detailsView.classList.add('hidden');
-        document.getElementById('uploader-view').classList.remove('hidden');
-        dashboardView.classList.remove('hidden');
-        expirationInfoBox.classList.add('hidden');
-        expirationInfoBox.className = 'bg-red-900/50 border-2 border-red-500 rounded-lg p-3';
-        expirationText.parentElement.classList.remove('text-blue-300');
-        expirationText.parentElement.classList.add('text-red-300');
-        expirationText.parentElement.querySelector('i').className = 'fa-solid fa-triangle-exclamation';
+    backToUploaderButton.addEventListener('click', showDashboardView);
+    homeButton.addEventListener('click', showDashboardView);
+    backToDashboardButton.addEventListener('click', showDashboardView);
 
-        fetchImages();
+    accountButton.addEventListener('click', showAccountView);
+
+
+    changeUsernameForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newUsername = newUsernameInput.value;
+        if (!newUsername || newUsername.trim() === "") {
+            showMessage("New username cannot be empty.", "error");
+            return;
+        }
+
+        try {
+            const response = await fetchWithTimeout(`${API_BASE_URL}/account/change-username`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ new_username: newUsername }),
+                credentials: 'include'
+            }, 8000);
+            const data = await response.json();
+            if (data.success) {
+                showMessage(data.message, 'success');
+                currentUser.username = data.new_username;
+                updateUI(true, { ...currentUser, username: data.new_username });
+                newUsernameInput.value = '';
+                newUsernameInput.placeholder = data.new_username;
+            } else {
+                showMessage(data.error, 'error');
+            }
+        } catch (error) {
+            showMessage("A network error occurred.", "error");
+        }
     });
+
+    changePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const currentPassword = currentPasswordInput.value;
+        const newPassword = newPasswordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+
+        if (newPassword !== confirmPassword) {
+            showMessage("New passwords do not match.", "error");
+            return;
+        }
+
+        try {
+            const response = await fetchWithTimeout(`${API_BASE_URL}/account/change-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                    confirm_password: confirmPassword
+                }),
+                credentials: 'include'
+            }, 8000);
+            const data = await response.json();
+            if (data.success) {
+                showMessage(data.message, 'success');
+                changePasswordForm.reset();
+            } else {
+                showMessage(data.error, 'error');
+            }
+        } catch (error) {
+            showMessage("A network error occurred.", "error");
+        }
+    });
+
+    deleteAccountForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const password = deleteConfirmPasswordInput.value;
+
+        let confirmMessage = "Are you sure you want to delete your account? This is permanent and all your images will be lost.";
+        if (currentUser.is_guest) {
+            confirmMessage = "Are you sure you want to delete this guest account? All your images will be lost.";
+        } else if (!password) {
+            showMessage("Please enter your password to confirm deletion.", "error");
+            return;
+        }
+
+        if (!showConfirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            const response = await fetchWithTimeout(`${API_BASE_URL}/account/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: password }),
+                credentials: 'include'
+            }, 8000);
+            const data = await response.json();
+            if (data.success) {
+                showMessage(data.message, 'success');
+                updateUI(false);
+            } else {
+                showMessage(data.error, 'error');
+            }
+        } catch (error) {
+            showMessage("A network error occurred.", "error");
+        }
+    });
+
+    async function fetchSessions() {
+        sessionsLoading.classList.remove('hidden');
+        sessionsList.innerHTML = '';
+        sessionsList.appendChild(sessionsLoading);
+
+        try {
+            const response = await fetchWithTimeout(`${API_BASE_URL}/account/sessions`, {
+                credentials: 'include'
+            }, 8000);
+            const data = await response.json();
+
+            sessionsList.innerHTML = '';
+
+            if (data && data.length > 0) {
+                data.forEach(session => {
+                    const { os, browser, icon } = parseUserAgent(session.user_agent);
+                    const loginTime = new Date(session.login_at).toLocaleString();
+                    const isCurrent = (session.hashed_ip === currentUser.last_seen_ip_hash);
+
+                    const li = document.createElement('li');
+                    li.className = "flex items-center justify-between p-3 bg-gray-800 rounded-lg";
+                    li.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <i class="fa-solid ${icon} text-2xl text-gray-400 w-6 text-center"></i>
+                            <div>
+                                <p class="font-medium text-white">${os} (${browser})</p>
+                                <p class="text-sm text-gray-400">${loginTime}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-sm font-mono text-gray-500" title="${session.hashed_ip}">${session.hashed_ip.substring(0, 10)}...</p>
+                             ${isCurrent ? '<span class="text-xs font-bold text-green-400">Current Session</span>' : ''}
+                        </div>
+                    `;
+                    sessionsList.appendChild(li);
+                });
+            } else {
+                sessionsList.innerHTML = `<li class="text-gray-400">No session history found.</li>`;
+            }
+
+        } catch (error) {
+            sessionsList.innerHTML = `<li class="text-red-400">Could not load session history.</li>`;
+        }
+    }
+
+    function parseUserAgent(ua) {
+        let os = "Unknown OS";
+        let browser = "Unknown Browser";
+        let icon = "fa-desktop";
+
+        if (!ua) return { os, browser, icon };
+
+        if (ua.includes("Windows")) { os = "Windows"; icon = "fa-brands fa-windows"; }
+        else if (ua.includes("Macintosh") || ua.includes("Mac OS")) { os = "Mac OS"; icon = "fa-brands fa-apple"; }
+        else if (ua.includes("Linux")) { os = "Linux"; icon = "fa-brands fa-linux"; }
+        else if (ua.includes("Android")) { os = "Android"; icon = "fa-brands fa-android"; }
+        else if (ua.includes("iPhone") || ua.includes("iPad")) { os = "iOS"; icon = "fa-brands fa-apple"; }
+
+        if (ua.includes("Edg/")) { browser = "Edge"; }
+        else if (ua.includes("Chrome")) { browser = "Chrome"; }
+        else if (ua.includes("Firefox")) { browser = "Firefox"; }
+        else if (ua.includes("Safari")) { browser = "Safari"; }
+
+        return { os, browser, icon };
+    }
 
     checkAuthStatus();
 });

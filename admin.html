@@ -1,0 +1,813 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapVector Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+        }
+
+        .tab-button {
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        .tab-button.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .modal-body-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-body-scroll::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 10px;
+        }
+
+        .modal-body-scroll::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 10px;
+        }
+
+        .modal-body-scroll::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+
+        .custom-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 0.65em auto;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-200 min-h-screen p-4 md:p-8">
+
+    <div id="admin-view" class="w-full max-w-7xl mx-auto p-4 md:p-8 bg-gray-800 rounded-lg shadow-xl hidden">
+        <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+            <h1 class="text-3xl font-bold text-white">
+                <i class="fa-solid fa-shield-halved text-indigo-400"></i>
+                SnapVector Admin Panel
+            </h1>
+            <a href="javascript:window.close();"
+                class="py-2 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition duration-200 flex items-center space-x-2">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Close</span>
+            </a>
+        </div>
+
+        <div class="border-b border-gray-700 mb-6">
+            <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                <button id="tab-btn-announce"
+                    class="tab-button active group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm text-gray-400 hover:text-indigo-400 hover:border-indigo-400 border-transparent"
+                    data-tab="announce">
+                    <i class="fa-solid fa-bullhorn mr-2"></i>
+                    Announcements
+                </button>
+                <button id="tab-btn-users"
+                    class="tab-button group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm text-gray-400 hover:text-indigo-400 hover:border-indigo-400 border-transparent"
+                    data-tab="users">
+                    <i class="fa-solid fa-users mr-2"></i>
+                    User Management
+                </button>
+            </nav>
+        </div>
+        <div id="tab-content-announce" class="tab-content active">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-semibold text-white">Post New Announcement</h2>
+                    <form id="announcement-form" class="space-y-6 bg-gray-700/30 p-6 rounded-xl border border-gray-700">
+                        <div>
+                            <label for="announcement-message"
+                                class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Message</label>
+                            <textarea id="announcement-message" name="message" rows="4"
+                                class="w-full p-4 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                                placeholder="Type your announcement here..."></textarea>
+                        </div>
+
+                        <div>
+                            <label
+                                class="block text-sm font-bold text-gray-300 mb-2 uppercase tracking-wider">Expiration</label>
+                            <div class="flex items-center space-x-4">
+                                <div class="relative flex-1">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fa-regular fa-clock text-gray-500"></i>
+                                    </div>
+                                    <input type="number" id="announcement-duration" name="duration" value="24" min="1"
+                                        class="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                                </div>
+                                <div class="relative flex-1">
+                                    <select id="announcement-unit" name="unit"
+                                        class="custom-select w-full pl-4 pr-10 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition cursor-pointer">
+                                        <option value="hours">Hours</option>
+                                        <option value="days">Days</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">The announcement will automatically disappear after
+                                this time.</p>
+                        </div>
+
+                        <button type="submit" id="submit-announcement"
+                            class="w-full py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-lg transform transition hover:-translate-y-0.5 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Post Announcement</span>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-semibold text-white">Active Announcements</h2>
+                        <button id="refresh-announcements"
+                            class="text-sm text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+
+                    <div id="active-announcements-list" class="space-y-3">
+                        <div class="text-center py-8 text-gray-500 bg-gray-700/30 rounded-xl border border-gray-700">
+                            <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                            <p>Loading active announcements...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-content-users" class="tab-content space-y-6">
+            <h2 class="text-2xl font-semibold text-white">User Management</h2>
+            <div class="overflow-x-auto bg-gray-900/50 rounded-lg shadow border border-gray-700">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-gray-800">
+                        <tr>
+                            <th scope="col"
+                                class="py-3.5 px-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                                User</th>
+                            <th scope="col"
+                                class="py-3.5 px-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                                Role</th>
+                            <th scope="col"
+                                class="py-3.5 px-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                                Images</th>
+                            <th scope="col"
+                                class="py-3.5 px-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                                Hashed Reg. IP</th>
+                            <th scope="col"
+                                class="py-3.5 px-4 text-left text-sm font-semibold text-gray-300 uppercase tracking-wider">
+                                Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list-body" class="divide-y divide-gray-700">
+                        <tr>
+                            <td colspan="5" class="py-6 px-4 text-center text-gray-400">
+                                <i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading users...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="admin-message-box" class="mt-6 text-sm rounded-lg p-4 hidden transition-all duration-300"></div>
+    </div>
+
+    <div id="loading-view" class="text-center pt-20">
+        <i class="fa-solid fa-spinner fa-spin text-5xl text-indigo-400"></i>
+        <p class="mt-4 text-xl text-gray-300">Loading Admin Panel...</p>
+    </div>
+
+    <div id="forbidden-view" class="text-center p-8 bg-gray-800 rounded-lg shadow-xl hidden max-w-lg mx-auto mt-20">
+        <i class="fa-solid fa-shield-halved text-6xl text-red-500 mb-5"></i>
+        <h1 class="text-4xl font-bold text-red-400 mb-3">Access Denied</h1>
+        <p class="text-lg text-gray-300">You do not have permission to view this page.</p>
+        <a href="javascript:window.close();"
+            class="mt-8 inline-block py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition duration-200">Close
+            Window</a>
+    </div>
+
+    <div id="confirm-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div
+            class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md border border-gray-700 transform transition-all scale-100">
+            <div class="p-6">
+                <h3 id="confirm-modal-title" class="text-lg font-medium leading-6 text-white">Are you sure?</h3>
+                <div class="mt-2">
+                    <p id="confirm-modal-text" class="text-sm text-gray-300">This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="bg-gray-700/50 px-6 py-4 flex flex-row-reverse space-x-4 space-x-reverse rounded-b-lg">
+                <button id="confirm-modal-confirm" type="button"
+                    class="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 bg-red-600 hover:bg-red-700 focus:ring-red-500">
+                    Confirm
+                </button>
+                <button id="confirm-modal-cancel" type="button"
+                    class="inline-flex justify-center rounded-md border border-gray-600 px-4 py-2 text-sm font-medium text-gray-200 shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="role-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-md border border-gray-700">
+            <div class="p-6">
+                <h3 class="text-lg font-medium leading-6 text-white mb-4">Change User Role</h3>
+                <p id="role-modal-username" class="text-sm text-gray-400 mb-4">User: </p>
+
+                <label for="role-select" class="block text-sm font-medium text-gray-300 mb-2">Select New Role</label>
+                <select id="role-select"
+                    class="custom-select w-full pl-4 pr-10 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition cursor-pointer">
+                    <option value="user">User</option>
+                    <option value="moderator">Moderator</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="bg-gray-700/50 px-6 py-4 flex flex-row-reverse space-x-4 space-x-reverse rounded-b-lg">
+                <button id="role-modal-save" type="button"
+                    class="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    Save Role
+                </button>
+                <button id="role-modal-cancel" type="button"
+                    class="inline-flex justify-center rounded-md border border-gray-600 px-4 py-2 text-sm font-medium text-gray-200 shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="image-modal" class="fixed inset-0 z-40 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col border border-gray-700">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 id="image-modal-title" class="text-lg font-medium text-white">User Images</h3>
+                <button id="image-modal-close" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+            <div id="image-modal-body" class="p-6 overflow-y-auto modal-body-scroll flex-1">
+                <p id="image-modal-loading" class="text-center text-gray-300">
+                    <i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading images...
+                </p>
+                <div id="image-modal-gallery" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_BASE_URL = 'https://idk-nqkw.onrender.com';
+
+            let currentUserRole = '';
+
+            const adminView = document.getElementById('admin-view');
+            const loadingView = document.getElementById('loading-view');
+            const forbiddenView = document.getElementById('forbidden-view');
+
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            const announceForm = document.getElementById('announcement-form');
+            const announceSubmit = document.getElementById('submit-announcement');
+            const announceMessage = document.getElementById('announcement-message');
+            const announceDuration = document.getElementById('announcement-duration');
+            const announceUnit = document.getElementById('announcement-unit');
+
+            const activeAnnouncementsList = document.getElementById('active-announcements-list');
+            const refreshAnnouncementsBtn = document.getElementById('refresh-announcements');
+
+            const userListBody = document.getElementById('user-list-body');
+
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmTitle = document.getElementById('confirm-modal-title');
+            const confirmText = document.getElementById('confirm-modal-text');
+            const confirmBtn = document.getElementById('confirm-modal-confirm');
+            const cancelBtn = document.getElementById('confirm-modal-cancel');
+
+            const roleModal = document.getElementById('role-modal');
+            const roleSelect = document.getElementById('role-select');
+            const roleModalUsername = document.getElementById('role-modal-username');
+            const roleModalSave = document.getElementById('role-modal-save');
+            const roleModalCancel = document.getElementById('role-modal-cancel');
+            let targetRoleUserId = null;
+
+            const imageModal = document.getElementById('image-modal');
+            const imageModalTitle = document.getElementById('image-modal-title');
+            const imageModalLoading = document.getElementById('image-modal-loading');
+            const imageModalGallery = document.getElementById('image-modal-gallery');
+            const imageModalClose = document.getElementById('image-modal-close');
+
+            let confirmResolve = null;
+
+            const messageBox = document.getElementById('admin-message-box');
+
+            async function pingServer() {
+                try {
+                    const currentUrl = window.location.href;
+                    await fetch(`${API_BASE_URL}/admin/ping`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: currentUrl }),
+                        credentials: 'include'
+                    });
+                    console.log('Admin URL registered with server.');
+                } catch (error) {
+                    console.warn('Failed to ping server. Redirects from backend may not work until next reload.');
+                }
+            }
+
+            async function checkAdminAuth() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth_status`, {
+                        credentials: 'include'
+                    });
+                    if (!response.ok) throw new Error('Not authenticated');
+                    const data = await response.json();
+
+                    currentUserRole = data.role || 'user';
+
+                    if (data.authenticated && (data.is_admin || data.role === 'owner' || data.role === 'admin' || data.role === 'moderator')) {
+                        loadingView.classList.add('hidden');
+                        adminView.classList.remove('hidden');
+
+                        pingServer();
+                        await fetchUsers();
+                        await fetchActiveAnnouncements();
+                    } else {
+                        showForbidden();
+                    }
+                } catch (error) {
+                    console.error('Auth check failed:', error);
+                    showForbidden();
+                }
+            }
+
+            function showForbidden() {
+                loadingView.classList.add('hidden');
+                forbiddenView.classList.remove('hidden');
+            }
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tab = button.dataset.tab;
+
+                    tabButtons.forEach(btn => btn.classList.remove('active', 'text-indigo-600', 'border-indigo-600'));
+                    button.classList.add('active', 'text-indigo-600', 'border-indigo-600');
+
+                    tabContents.forEach(content => {
+                        if (content.id === `tab-content-${tab}`) {
+                            content.classList.add('active');
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            function showAdminMessage(message, type = 'info') {
+                let typeClasses = '';
+                switch (type) {
+                    case 'success':
+                        typeClasses = 'bg-green-900/50 text-green-300 border border-green-500';
+                        break;
+                    case 'error':
+                        typeClasses = 'bg-red-900/50 text-red-300 border border-red-500';
+                        break;
+                    default:
+                        typeClasses = 'bg-blue-900/50 text-blue-300 border border-blue-500';
+                        break;
+                }
+                messageBox.className = `mt-6 text-sm rounded-lg p-4 ${typeClasses} opacity-100 transform translate-y-0`;
+                messageBox.textContent = message;
+                messageBox.classList.remove('hidden');
+
+                setTimeout(() => {
+                    messageBox.classList.add('opacity-0', '-translate-y-2');
+                    setTimeout(() => messageBox.classList.add('hidden'), 300);
+                }, 5000);
+            }
+
+            function showConfirmModal(title, text, confirmClass = 'bg-red-600 hover:bg-red-700 focus:ring-red-500') {
+                confirmTitle.textContent = title;
+                confirmText.textContent = text;
+                confirmBtn.className = `inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${confirmClass}`;
+                confirmModal.classList.remove('hidden');
+
+                return new Promise((resolve) => {
+                    confirmResolve = resolve;
+                });
+            }
+
+            cancelBtn.addEventListener('click', () => {
+                confirmModal.classList.add('hidden');
+                if (confirmResolve) confirmResolve(false);
+            });
+            confirmBtn.addEventListener('click', () => {
+                confirmModal.classList.add('hidden');
+                if (confirmResolve) confirmResolve(true);
+            });
+
+            imageModalClose.addEventListener('click', () => {
+                imageModal.classList.add('hidden');
+                imageModalGallery.innerHTML = '';
+            });
+
+
+            async function fetchActiveAnnouncements() {
+                activeAnnouncementsList.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fa-solid fa-spinner fa-spin mb-2"></i><p>Refreshing...</p></div>';
+                try {
+                    const response = await fetch(`${API_BASE_URL}/announcements`, { credentials: 'include' });
+                    if (!response.ok) throw new Error('Failed');
+                    const data = await response.json();
+
+                    activeAnnouncementsList.innerHTML = '';
+                    if (data.length === 0) {
+                        activeAnnouncementsList.innerHTML = `
+                            <div class="text-center py-8 text-gray-500 bg-gray-700/30 rounded-xl border border-gray-700">
+                                <i class="fa-solid fa-inbox text-2xl mb-2"></i>
+                                <p>No active announcements.</p>
+                            </div>`;
+                        return;
+                    }
+
+                    data.forEach(announcement => {
+                        const el = document.createElement('div');
+                        el.className = 'bg-gray-700/50 rounded-lg p-4 border border-gray-600 flex justify-between items-start hover:bg-gray-700 transition group';
+
+                        const created = new Date(announcement.created_at).toLocaleDateString();
+                        const expires = announcement.expires_at ? new Date(announcement.expires_at).toLocaleString() : 'Never';
+
+                        el.innerHTML = `
+                            <div class="flex-1 pr-4">
+                                <p class="text-white font-medium mb-1">${announcement.message}</p>
+                                <div class="text-xs text-gray-400 flex flex-wrap gap-3">
+                                    <span><i class="fa-regular fa-calendar mr-1"></i> Posted: ${created}</span>
+                                    <span class="${announcement.expires_at ? 'text-yellow-500' : ''}"><i class="fa-solid fa-hourglass-end mr-1"></i> Expires: ${expires}</span>
+                                </div>
+                            </div>
+                            <button class="delete-announcement-btn text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-gray-900 p-2 rounded-lg transition" data-id="${announcement.id}" title="Delete Announcement">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        `;
+                        activeAnnouncementsList.appendChild(el);
+                    });
+
+                    document.querySelectorAll('.delete-announcement-btn').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const id = btn.dataset.id;
+                            const confirmed = await showConfirmModal('Delete Announcement?', 'This will remove the announcement immediately for all users.', 'bg-red-600 hover:bg-red-700 focus:ring-red-500');
+                            if (confirmed) {
+                                deleteAnnouncement(id);
+                            }
+                        });
+                    });
+
+                } catch (error) {
+                    console.error(error);
+                    activeAnnouncementsList.innerHTML = '<p class="text-red-400 text-center">Failed to load announcements.</p>';
+                }
+            }
+
+            async function deleteAnnouncement(id) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/announcement/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showAdminMessage('Announcement deleted.', 'success');
+                        fetchActiveAnnouncements();
+                    } else {
+                        showAdminMessage(data.error, 'error');
+                    }
+                } catch (e) {
+                    showAdminMessage('Network error.', 'error');
+                }
+            }
+
+            refreshAnnouncementsBtn.addEventListener('click', fetchActiveAnnouncements);
+
+            announceForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const message = announceMessage.value;
+                const duration = announceDuration.value;
+                const unit = announceUnit.value;
+
+                if (!message || message.trim() === "") {
+                    showAdminMessage('Message cannot be empty.', 'error');
+                    return;
+                }
+
+                const originalButtonText = announceSubmit.innerHTML;
+                announceSubmit.disabled = true;
+                announceSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i><span class="ml-2">Posting...</span>`;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/announce`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: message,
+                            duration: duration,
+                            unit: unit
+                        }),
+                        credentials: 'include'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        showAdminMessage(data.message, 'success');
+                        announceMessage.value = '';
+                        announceDuration.value = "24";
+                        announceUnit.value = "hours";
+                        fetchActiveAnnouncements();
+                    } else {
+                        showAdminMessage(data.error || 'Failed to post.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Post announcement error:', error);
+                    showAdminMessage('A network error occurred.', 'error');
+                } finally {
+                    announceSubmit.disabled = false;
+                    announceSubmit.innerHTML = originalButtonText;
+                }
+            });
+
+
+            async function fetchUsers() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/users`, { credentials: 'include' });
+                    if (!response.ok) throw new Error('Failed to fetch users');
+                    const users = await response.json();
+
+                    userListBody.innerHTML = '';
+                    if (users.length === 0) {
+                        userListBody.innerHTML = `<tr><td colspan="5" class="py-6 px-4 text-center text-gray-400">No users found.</td></tr>`;
+                        return;
+                    }
+
+                    users.forEach(user => {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-gray-800 transition duration-150 border-b border-gray-700/50 last:border-none";
+
+                        let displayRole = 'User';
+                        let roleColor = 'text-blue-400';
+
+                        const rawRole = (user.role || 'user').toLowerCase();
+
+                        if (rawRole === 'owner') {
+                            displayRole = 'Owner';
+                            roleColor = 'text-yellow-500 font-extrabold';
+                        } else if (rawRole === 'admin') {
+                            displayRole = 'Admin';
+                            roleColor = 'text-red-500 font-bold';
+                        } else if (rawRole === 'moderator') {
+                            displayRole = 'Moderator';
+                            roleColor = 'text-green-500 font-semibold';
+                        } else if (rawRole === 'guest') {
+                            displayRole = 'Guest';
+                            roleColor = 'text-gray-400 italic';
+                        }
+
+                        const canEditRole = (currentUserRole === 'owner') && (rawRole !== 'owner');
+                        const editRoleBtnHtml = canEditRole ? `
+                            <button class="edit-role-btn bg-indigo-900/30 text-indigo-400 hover:text-white hover:bg-indigo-600 p-2 rounded-lg transition" data-id="${user.id}" data-username="${user.username}" data-role="${rawRole}" title="Change Role">
+                                <i class="fa-solid fa-user-tag"></i>
+                            </button>
+                        ` : '';
+
+                        const canDelete = (currentUserRole === 'owner') || (currentUserRole === 'admin' && rawRole !== 'admin' && rawRole !== 'owner');
+
+                        const deleteBtnHtml = canDelete ? `
+                            <button class="delete-user-btn bg-red-900/30 text-red-500 hover:text-red-300 hover:bg-red-900/60 p-2 rounded-lg transition" data-id="${user.id}" data-username="${user.username}" title="Delete User">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <button class="ban-user-btn bg-red-900/30 text-red-700 hover:text-red-500 hover:bg-red-900/60 p-2 rounded-lg transition" data-id="${user.id}" data-username="${user.username}" title="Ban User & IP">
+                                <i class="fa-solid fa-gavel"></i>
+                            </button>
+                        ` : '';
+
+                        tr.innerHTML = `
+                            <td class="py-4 px-4 text-sm font-medium text-white">${user.username}</td>
+                            <td class="py-4 px-4 text-sm ${roleColor}">${displayRole}</td>
+                            <td class="py-4 px-4 text-sm text-gray-300">${user.image_count}</td>
+                            <td class="py-4 px-4 text-sm text-gray-400 font-mono" title="${user.registration_ip_hash || 'N/A'}">
+                                ${user.registration_ip_hash ? user.registration_ip_hash.substring(0, 12) + '...' : 'N/A'}
+                            </td>
+                            <td class="py-4 px-4 text-sm font-medium space-x-2 whitespace-nowrap">
+                                <button class="view-images-btn bg-gray-700 text-gray-300 hover:text-white hover:bg-gray-600 p-2 rounded-lg transition" data-id="${user.id}" data-username="${user.username}" title="View Images">
+                                    <i class="fa-solid fa-images"></i>
+                                </button>
+                                ${editRoleBtnHtml}
+                                ${deleteBtnHtml}
+                            </td>
+                        `;
+                        userListBody.appendChild(tr);
+                    });
+
+                    addUserEventListeners();
+
+                } catch (error) {
+                    console.error('Fetch users error:', error);
+                    userListBody.innerHTML = `<tr><td colspan="5" class="py-6 px-4 text-center text-red-400">Failed to load users.</td></tr>`;
+                }
+            }
+
+            function addUserEventListeners() {
+                document.querySelectorAll('.view-images-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const { id, username } = e.currentTarget.dataset;
+                        handleViewImages(id, username);
+                    });
+                });
+                document.querySelectorAll('.delete-user-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const { id, username } = e.currentTarget.dataset;
+                        handleDeleteUser(id, username);
+                    });
+                });
+                document.querySelectorAll('.ban-user-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const { id, username } = e.currentTarget.dataset;
+                        handleBanUser(id, username);
+                    });
+                });
+                document.querySelectorAll('.edit-role-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const { id, username, role } = e.currentTarget.dataset;
+                        openRoleModal(id, username, role);
+                    });
+                });
+            }
+
+            function openRoleModal(userId, username, currentRole) {
+                targetRoleUserId = userId;
+                roleModalUsername.textContent = `User: ${username}`;
+
+                if (['admin', 'moderator', 'user'].includes(currentRole)) {
+                    roleSelect.value = currentRole;
+                } else {
+                    roleSelect.value = 'user';
+                }
+
+                roleModal.classList.remove('hidden');
+            }
+
+            roleModalCancel.addEventListener('click', () => {
+                roleModal.classList.add('hidden');
+                targetRoleUserId = null;
+            });
+
+            roleModalSave.addEventListener('click', async () => {
+                if (!targetRoleUserId) return;
+
+                const newRole = roleSelect.value;
+                const originalBtnText = roleModalSave.textContent;
+                roleModalSave.disabled = true;
+                roleModalSave.textContent = 'Saving...';
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/set_role`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: targetRoleUserId, role: newRole }),
+                        credentials: 'include'
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showAdminMessage(data.message, 'success');
+                        roleModal.classList.add('hidden');
+                        await fetchUsers();
+                    } else {
+                        showAdminMessage(data.error, 'error');
+                    }
+                } catch (error) {
+                    showAdminMessage('Network error occurred.', 'error');
+                } finally {
+                    roleModalSave.disabled = false;
+                    roleModalSave.textContent = originalBtnText;
+                }
+            });
+
+
+            async function handleViewImages(userId, username) {
+                imageModalTitle.textContent = `Images for ${username}`;
+                imageModalGallery.classList.add('hidden');
+                imageModalLoading.classList.remove('hidden');
+                imageModal.classList.remove('hidden');
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/admin/user/${userId}/images`, { credentials: 'include' });
+                    if (!response.ok) throw new Error('Failed to fetch images');
+                    const images = await response.json();
+
+                    imageModalGallery.innerHTML = '';
+                    if (images.length === 0) {
+                        imageModalGallery.innerHTML = `<p class="text-gray-400 col-span-full text-center">This user has no images.</p>`;
+                    } else {
+                        images.forEach(img => {
+                            imageModalGallery.innerHTML += `
+                                <div class="group relative">
+                                    <img src="${img.url}" alt="${img.filename}" class="w-full h-32 object-cover rounded-lg border border-gray-600">
+                                    <a href="${img.url}" target="_blank" rel="noopener noreferrer" class="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <i class="fa-solid fa-up-right-from-square text-white text-2xl"></i>
+                                    </a>
+                                </div>
+                            `;
+                        });
+                    }
+                } catch (error) {
+                    console.error('Fetch images error:', error);
+                    imageModalGallery.innerHTML = `<p class="text-red-400 col-span-full text-center">Failed to load images.</p>`;
+                } finally {
+                    imageModalLoading.classList.add('hidden');
+                    imageModalGallery.classList.remove('hidden');
+                }
+            }
+
+            async function handleDeleteUser(userId, username) {
+                const confirmed = await showConfirmModal(
+                    `Delete User: ${username}?`,
+                    "This will permanently delete the user and all their uploaded images. This action cannot be undone.",
+                    'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                );
+
+                if (confirmed) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/admin/user/${userId}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            showAdminMessage(data.message, 'success');
+                            await fetchUsers();
+                        } else {
+                            showAdminMessage(data.error, 'error');
+                        }
+                    } catch (error) {
+                        showAdminMessage('A network error occurred.', 'error');
+                    }
+                }
+            }
+
+            async function handleBanUser(userId, username) {
+                const confirmed = await showConfirmModal(
+                    `Ban User & IP: ${username}?`,
+                    "This will delete the user, all their images, AND ban their known IP addresses (registration & last seen) from accessing the site. This is not easily reversible.",
+                    'bg-red-800 hover:bg-red-700 focus:ring-red-700'
+                );
+
+                if (confirmed) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/admin/ban`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: userId }),
+                            credentials: 'include'
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            showAdminMessage(data.message, 'success');
+                            await fetchUsers();
+                        } else {
+                            showAdminMessage(data.error, 'error');
+                        }
+                    } catch (error) {
+                        showAdminMessage('A network error occurred.', 'error');
+                    }
+                }
+            }
+
+            checkAdminAuth();
+        });
+    </script>
+</body>
+
+</html>
