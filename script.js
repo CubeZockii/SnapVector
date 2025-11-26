@@ -281,6 +281,10 @@
             currentUser = { ...userData };
 
             showView('dashboard');
+            
+            // --- FIX: Load images immediately upon restoring session ---
+            fetchImages(); 
+            // -----------------------------------------------------------
 
             let roleBadge = '';
             if (currentUser.role === 'owner') roleBadge = '👑 Owner';
@@ -290,12 +294,11 @@
             else roleBadge = 'User';
 
             const greeting = `Welcome, ${userData.username} <span class="text-xs bg-gray-700 px-2 py-0.5 rounded ml-2">${roleBadge}</span>`;
-            userGreeting.innerHTML = greeting;
+            if (userGreeting) userGreeting.innerHTML = greeting;
 
             if (adminButton) {
                 const isAdmin = userData.role === 'owner' || userData.role === 'admin' || userData.role === 'moderator' || userData.is_admin;
                 adminButton.classList.toggle('hidden', !isAdmin);
-
                 if (isAdmin) adminButton.href = 'admin.html';
             }
 
@@ -923,3 +926,4 @@
     checkAuthStatus();
 
 });
+
