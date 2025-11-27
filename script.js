@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
 
     const API_BASE_URL = 'https://snapvector-server.codelabworks.is-cool.dev';
 
@@ -215,7 +215,9 @@
                     item.className = `relative group rounded-lg overflow-hidden border ${expiryClass} bg-gray-700 shadow-xl cursor-pointer gallery-image`;
                     item.setAttribute('data-image-id', image.id);
                     const img = document.createElement('img');
-                    img.src = image.url;
+
+                    img.src = `${image.url}?raw=1`;
+
                     img.alt = `Uploaded on ${new Date(image.upload_date).toLocaleDateString()}`;
                     img.className = 'w-full h-32 object-cover';
                     const overlay = document.createElement('div');
@@ -280,11 +282,16 @@
         if (isAuthenticated && userData) {
             currentUser = { ...userData };
 
-            showView('dashboard');
-            
-            // --- FIX: Load images immediately upon restoring session ---
-            fetchImages(); 
-            // -----------------------------------------------------------
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewId = urlParams.get('view_id');
+
+            if (viewId) {
+                showDetailsView(viewId);
+                fetchImages();
+            } else {
+                showView('dashboard');
+                fetchImages();
+            }
 
             let roleBadge = '';
             if (currentUser.role === 'owner') roleBadge = '👑 Owner';
@@ -622,7 +629,9 @@
                 showView('details');
                 const expiryDate = data.expires_at ? new Date(data.expires_at) : null;
                 detailsTitle.textContent = `Image Details: ${truncateFilename(data.filename, 35)}`;
-                imagePreview.src = data.url;
+
+                imagePreview.src = `${data.url}?raw=1`;
+
                 shareLinkInput.value = data.url;
 
                 if (expiryDate) {
@@ -926,4 +935,3 @@
     checkAuthStatus();
 
 });
-
