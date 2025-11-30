@@ -1,0 +1,108 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - SnapVector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-300 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
+
+        <div class="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-indigo-500"></i> Privacy Policy
+            </h1>
+            <a href="index.html" class="text-sm text-indigo-400 hover:text-indigo-300 transition font-medium">
+                <i class="fa-solid fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+
+        <div class="p-6 md:p-10 space-y-8 text-sm md:text-base leading-relaxed">
+
+            <p>At <strong>SnapVector</strong>, we prioritize user privacy. We have designed our system to collect the
+                minimum amount of data necessary to function securely.</p>
+
+            <section>
+                <h2 class="text-xl font-semibold text-white mb-3">1. Information We Collect</h2>
+                <div class="space-y-4">
+                    <div class="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                        <h3 class="font-bold text-indigo-300 mb-1">Account Data</h3>
+                        <p>We store your <strong>username</strong> and a secure hash of your <strong>password</strong>
+                            (using Bcrypt). We cannot read your actual password.</p>
+                    </div>
+                    <div class="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                        <h3 class="font-bold text-indigo-300 mb-1">Uploaded Content</h3>
+                        <p>We host the image files you upload and metadata such as the upload date and expiration date.
+                        </p>
+                    </div>
+                    <div class="bg-gray-700/30 p-4 rounded-lg border border-gray-700">
+                        <h3 class="font-bold text-indigo-300 mb-1">Technical Data (Anonymized)</h3>
+                        <p>We <strong>do not</strong> store raw IP addresses. Instead, we store a <strong>SHA-256
+                                hash</strong> of your IP address. This allows us to identify unique visitors for rate
+                            limiting and security without storing your actual location data.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold text-white mb-3">2. How We Use Your Information</h2>
+                <ul class="list-disc pl-5 space-y-2 text-gray-400">
+                    <li>To provide the hosting service and manage image lifecycles.</li>
+                    <li>To prevent abuse via Rate Limiting (e.g., max 5 registrations per minute).</li>
+                    <li>To enforce bans on malicious users via Hashed IPs.</li>
+                    <li>To display your session history in your account dashboard.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold text-white mb-3">3. Who do we sell data to?</h2>
+                <p class="text-gray-400"><strong>We do not sell any user data</strong>, including account information,
+                    uploaded files, or hashed technical data, to any third parties.</p>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold text-white mb-3">4. Data Retention & Deletion</h2>
+                <ul class="list-disc pl-5 space-y-2 text-gray-400">
+                    <li><strong>Images:</strong> Automatically deleted on the 1st of every month.</li>
+                    <li><strong>Session History:</strong> We retain the last 10 login sessions.</li>
+                    <li><strong>Account Deletion:</strong> You have the "Right to be Forgotten." Using the "Delete
+                        Account" feature in your settings will immediately and irreversibly remove your user record,
+                        password hash, and all associated images.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold text-white mb-3">5. Cookies</h2>
+                <p>We use secure, HTTP-only session cookies to maintain your login state. These are strictly necessary
+                    for the operation of the website.</p>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-semibold text-white mb-3">6. Policy Changes</h2>
+                <p>We reserve the right to modify or replace this Privacy Policy at any time without prior notice. The
+                    "Last Updated" date at the bottom of this page will be updated upon any changes.</p>
+            </section>
+
+        </div>
+
+        <div class="pt-6 border-t border-gray-700 text-gray-500 text-xs p-6">
+            Last Updated:
+            <script>document.write(new Date().getFullYear())</script>
+        </div>
+    </div>
+</body>
+
+</html>
