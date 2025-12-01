@@ -1,6 +1,6 @@
 ﻿document.addEventListener('DOMContentLoaded', () => {
 
-    const API_BASE_URL = 'https://snapvector-server.codelabworks.is-cool.dev';
+    const API_BASE_URL = 'https://snapvector.pulledtheirlife.support';
 
     let currentUser = {
         username: null,
@@ -924,3 +924,4 @@
     checkAuthStatus();
 
 });
+
