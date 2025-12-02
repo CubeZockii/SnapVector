@@ -947,8 +947,8 @@
             if (response.ok) {
                 const data = await response.json();
                 
-                // Check if API is operational
-                if (data.status === 'operational' || data.api === 'operational') {
+                // Check if API is operational - handle multiple response formats
+                if (response.status === 200 || data.status_code === 200 || data.status === 'operational' || data.api === 'operational') {
                     statusDot.className = 'w-2 h-2 rounded-full bg-green-500';
                     statusText.textContent = 'All Systems Operational';
                     apiStatus.textContent = 'Operational';
