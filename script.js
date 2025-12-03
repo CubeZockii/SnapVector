@@ -196,8 +196,8 @@
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    updateUI(false);
-                    return;
+                    console.warn('Unauthorized access while fetching images.');
+                    throw new Error('Unauthorized');
                 }
                 throw new Error('Failed to fetch images.');
             }
@@ -234,6 +234,9 @@
             console.error('Error fetching images:', error);
             if (error.message.includes('timed out')) {
                 showMessage('Could not load images: The server took too long to respond.', 'error');
+            } else if (error.message === 'Unauthorized') {
+                 // Do nothing, just stay on dashboard
+                 console.log("Session not fully ready yet, or images restricted.");
             } else {
                 showMessage('Could not load your images.', 'error');
             }
